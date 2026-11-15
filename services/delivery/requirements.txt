@@ -1,0 +1,5 @@
+fastapi==0.141.1
+uvicorn==0.52.1
+websockets==15.0.1
+PyJWT[crypto]==2.15.1
+aio-pika==10.2.3

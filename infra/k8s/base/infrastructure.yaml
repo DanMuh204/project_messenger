@@ -1,0 +1,201 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  serviceName: postgres-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: messenger
+        app.kubernetes.io/component: postgres
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: postgres
+        image: postgres:17
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-admin
+              key: password
+        - name: CHAT_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: chat-db
+              key: password
+        - name: AUTH_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: auth-db
+              key: password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        ports:
+        - containerPort: 5432
+          name: postgres
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: init
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -h
+            - 127.0.0.1
+            - -U
+            - postgres
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 750m
+            memory: 512Mi
+      volumes:
+      - name: init
+        configMap:
+          name: postgres-init
+      enableServiceLinks: false
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 2Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  serviceName: rabbitmq-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: rabbitmq
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: messenger
+        app.kubernetes.io/component: rabbitmq
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:4.2-management
+        env:
+        - name: RABBITMQ_DEFAULT_USER
+          value: messenger
+        - name: RABBITMQ_DEFAULT_VHOST
+          value: messenger
+        - name: RABBITMQ_NODENAME
+          value: rabbit@rabbitmq-0
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: broker
+              key: password
+        ports:
+        - name: amqp
+          containerPort: 5672
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/rabbitmq
+        readinessProbe:
+          exec:
+            command:
+            - rabbitmq-diagnostics
+            - -q
+            - check_port_connectivity
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 8
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 768Mi
+      enableServiceLinks: false
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: messenger
+        app.kubernetes.io/component: redis
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: redis
+        image: redis:7.4-alpine
+        command:
+        - redis-server
+        - --save
+        - ''
+        - --appendonly
+        - 'no'
+        ports:
+        - name: redis
+          containerPort: 6379
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 300m
+            memory: 128Mi
+      enableServiceLinks: false

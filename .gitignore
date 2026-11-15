@@ -1,0 +1,20 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.DS_Store
+
+# Step 3
+dev-secrets/
+.step3-backups/
+.pytest_cache/
+*.pyc
+
+# Local step 4 checks
+.ruff_cache/
+compose.ci.yaml
+
+
+# Step 5 local credentials, database dumps and generated evidence
+.step5-backups/
+docs/step5/*-live.json

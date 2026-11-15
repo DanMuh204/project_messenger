@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Messenger</title>
+  <link rel="stylesheet" href="/static/chat.css">
+  <script src="/static/chat.js" type="module"></script>
+</head>
+<body>
+<div class="shell">
+  <header class="header">
+    <div class="brand"><span class="brand-icon" aria-hidden="true">✉</span><div><strong>Messenger</strong><small>Личные сообщения</small></div></div>
+    <span id="connection-status" class="status" role="status">Нужен вход</span>
+  </header>
+  <p id="global-feedback" class="feedback" role="alert"></p>
+  <main>
+    <form id="auth-form" class="panel login">
+      <h1 id="auth-title">Войти в Messenger</h1>
+      <p class="muted">Войдите или создайте аккаунт, чтобы начать переписку.</p>
+      <label>Имя пользователя<input id="username" autocomplete="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_]+" placeholder="danis"></label>
+      <label>Пароль<input id="password" type="password" autocomplete="current-password" required minlength="15" maxlength="128" placeholder="Не менее 15 символов"></label>
+      <div class="login-footer"><button id="auth-submit" type="submit">Войти</button><button id="auth-toggle" class="secondary" type="button">Создать аккаунт</button></div>
+      <p id="auth-feedback" class="feedback error" role="alert"></p>
+    </form>
+    <div id="workspace" class="workspace" hidden>
+      <aside class="panel sidebar">
+        <div class="account"><strong id="current-user"></strong><button id="logout" class="secondary" type="button">Выйти</button></div>
+        <form id="new-dialog-form"><label>Новая переписка<input id="peer-name" autocomplete="off" required placeholder="Имя собеседника"></label><button type="submit">Начать диалог</button></form>
+        <p id="dialog-feedback" class="feedback error" role="alert"></p>
+        <div class="dialog-heading"><h2>Диалоги</h2><button id="refresh-dialogs" class="secondary" type="button">Обновить</button></div>
+        <nav id="dialogs" aria-label="Диалоги"></nav>
+      </aside>
+      <section class="panel chat" aria-label="Переписка">
+        <div class="chat-top"><div><h1 id="conversation-title">Выберите диалог</h1><p id="conversation-info" class="muted">Сообщения появятся здесь</p></div></div>
+        <div class="history-tools"><button id="load-older" class="secondary" type="button" hidden>Загрузить ранее</button></div>
+        <div id="messages" class="messages" aria-label="История сообщений" aria-live="polite"></div>
+        <form id="send-form" class="compose">
+          <label class="sr-only" for="message-text">Текст сообщения</label>
+          <textarea id="message-text" rows="2" maxlength="4000" required disabled placeholder="Напишите сообщение…"></textarea>
+          <button id="send-button" type="submit" disabled>Отправить</button>
+        </form>
+        <div class="chat-footer"><p id="chat-feedback" class="feedback" role="status"></p></div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

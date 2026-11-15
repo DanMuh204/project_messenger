@@ -1,0 +1,487 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-auth
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: auth
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: proxy
+    ports:
+    - protocol: TCP
+      port: 8000
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: chat
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-chat
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: chat
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: proxy
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: auth
+    ports:
+    - protocol: TCP
+      port: 8000
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-delivery
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: delivery
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: proxy
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: rabbitmq
+    ports:
+    - protocol: TCP
+      port: 5672
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-outbox
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: outbox
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress: []
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: rabbitmq
+    ports:
+    - protocol: TCP
+      port: 5672
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-consumer
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: consumer
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress: []
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: rabbitmq
+    ports:
+    - protocol: TCP
+      port: 5672
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-proxy
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: proxy
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: auth
+    ports:
+    - protocol: TCP
+      port: 8000
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: chat
+    ports:
+    - protocol: TCP
+      port: 8000
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: delivery
+    ports:
+    - protocol: TCP
+      port: 8000
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-postgres
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: postgres
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: chat
+    ports:
+    - protocol: TCP
+      port: 5432
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: auth
+    ports:
+    - protocol: TCP
+      port: 5432
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: outbox
+    ports:
+    - protocol: TCP
+      port: 5432
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: migrate
+    ports:
+    - protocol: TCP
+      port: 5432
+  egress: []
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: redis
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: chat
+    ports:
+    - protocol: TCP
+      port: 6379
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: outbox
+    ports:
+    - protocol: TCP
+      port: 6379
+  egress: []
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-rabbitmq
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: rabbitmq
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: outbox
+    ports:
+    - protocol: TCP
+      port: 5672
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: delivery
+    ports:
+    - protocol: TCP
+      port: 5672
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: consumer
+    ports:
+    - protocol: TCP
+      port: 5672
+  egress: []
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-migrate
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: messenger
+      app.kubernetes.io/component: migrate
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress: []
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: messenger
+          app.kubernetes.io/component: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53

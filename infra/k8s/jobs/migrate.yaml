@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-step5
+  namespace: messenger
+  labels:
+    messenger-step: '5'
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: messenger
+        app.kubernetes.io/component: migrate
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      containers:
+      - name: migrate
+        image: postgres:17
+        env:
+        - name: PGHOST
+          value: postgres
+        - name: CHAT_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: chat-db
+              key: password
+        - name: AUTH_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: auth-db
+              key: password
+        command:
+        - sh
+        - -ec
+        - 'for f in /migrations/chat-*.sql; do PGPASSWORD="$CHAT_DB_PASSWORD" psql
+          -U chat_app -d chat_db -v ON_ERROR_STOP=1 -f "$f"; done
+
+          for f in /migrations/auth-*.sql; do PGPASSWORD="$AUTH_DB_PASSWORD" psql
+          -U auth_app -d auth_db -v ON_ERROR_STOP=1 -f "$f"; done'
+        volumeMounts:
+        - name: sql
+          mountPath: /migrations
+          readOnly: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 300m
+            memory: 128Mi
+      volumes:
+      - name: sql
+        configMap:
+          name: migrations-step5
+      enableServiceLinks: false
